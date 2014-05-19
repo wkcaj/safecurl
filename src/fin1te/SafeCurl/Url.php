@@ -1,0 +1,236 @@
+<?php
+namespace fin1te\SafeCurl;
+
+use fin1te\SafeCurl\Exception\InvalidUrlException;
+use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidDomainException;
+use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidIPException;
+use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidPortException;
+use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidSchemeException;
+
+class Url {
+    /**
+     * Validates the whole URL
+     *
+     * @param $url     string
+     * @param $options fin1te\SafeCurl\Options
+     *
+     * @return string
+     */
+    public static function validateUrl($url, Options $options) {
+        if (trim($url) == '') {
+            throw new InvalidUrlException("Provided URL '$url' cannot be empty");
+        }
+
+        //Split URL into parts first
+        $parts = parse_url($url);
+
+        if (empty($parts)) {
+            throw new InvalidUrlException("Error parsing URL '$url'");
+        }
+
+        if (!array_key_exists('host', $parts)) {
+            throw new InvalidUrlException("Provided URL '$url' doesn't contain a hostname");
+        }
+
+        //First, validate the scheme 
+        if (array_key_exists('scheme', $parts)) {
+            $parts['scheme'] = self::validateScheme($parts['scheme'], $options);
+        } else {
+            //Default to http
+            $parts['scheme'] = 'http';
+        }
+
+        //Validate the port
+        if (array_key_exists('port', $parts)) {
+            $parts['port'] = self::validatePort($parts['port'], $scheme, $options);
+        }
+
+        //Validate the host
+        $parts['host'] = self::validateHost($parts['host'], $options);
+
+        //Rebuild the URL
+        $url = self::buildUrl($parts);
+
+        return $url;
+    }
+
+    /**
+     * Validates a URL scheme
+     *
+     * @param $scheme  string
+     * @param $options fin1te\SafeCurl\Options
+     *
+     * @return string
+     */
+    public static function validateScheme($scheme, Options $options) {
+        //Whitelist always takes precedence over a blacklist
+        if (!$options->isInList('whitelist', 'scheme', $scheme)) {
+            throw new InvalidSchemeException("Provided scheme '$scheme' doesn't match whitelisted values: "
+                                           . implode(', ', $options->getList('whitelist', 'scheme')));
+        }
+
+        if ($options->isInList('blacklist', 'scheme', $scheme)) {
+            throw new InvalidSchemeException("Provided scheme '$scheme' matches a blacklisted value");
+        }
+
+        //Existing value is fine
+        return $scheme;
+    }
+
+    /**
+     * Validates a port
+     *
+     * @param $port    int
+     * @param $options fin1te\SafeCurl\Options
+     *
+     * @return int
+     */
+    public static function validatePort($port, Options $options) {
+        if (!$options->isInList('whitelist', 'port', $port)) {
+            throw new InvalidPortException("Provided port '$port' doesn't match whitelisted values: "
+                                         . implode(', ', $options->getList('whitelist', 'port')));
+        }
+
+        if ($options->isInList('blacklist', 'port', $port)) {
+            throw new InvalidPortException("Provided port '$port' matches a blacklisted value");
+        }
+
+        //Existing value is fine
+        return $port;
+    }
+
+    /**
+     * Validates a URL host
+     *
+     * @param $host    string
+     * @param $options fin1te\SafeCurl\Options
+     *
+     * @returns string
+     */
+    public static function validateHost($host, Options $options) {
+        //Check the host against the domain lists
+        if (!$options->isInList('whitelist', 'domain', $host)) {
+            throw new InvalidDomainException("Provided host '$host' doesn't match whitelisted values: "
+                                           . implode(', ', $options->getList('whitelist', 'domain')));
+        }
+
+        if ($options->isInList('blacklist', 'domain', $host)) {
+            throw new InvalidDomainException("Provided host '$host' matches a blacklisted value");
+        }
+
+        //Now resolve to an IP and check against the IP lists
+        $ips = @gethostbynamel($host);
+        if (empty($ips)) {
+             throw new InvalidDomainException("Provided host '$host' doesn't resolve to an IP address");
+        }
+
+        $whitelistedIps = $options->getList('whitelist', 'ip');
+
+        if (!empty($whitelistedIps)) {
+            $valid = false;
+
+            foreach ($whitelistedIps as $whitelistedIp) {
+                foreach ($ips as $ip) {
+                    if (self::cidrMatch($ip, $whitelistedIp)) {
+                        $valid = true;
+                        break 2;
+                    }
+                }
+            }
+
+            if (!$valid) {
+                throw new InvalidIpException("Provided host '$host' resolves to '" . implode(', ', $ips) 
+                                           . "', which doesn't match whitelisted values: "
+                                           . implode(', ', $whitelistedIps));
+            }
+        }
+
+        $blacklistedIps = $options->getList('blacklist', 'ip');
+
+        if (!empty($blacklistedIps)) {
+            foreach ($blacklistedIps as $blacklistedIp) {
+                foreach ($ips as $ip) {
+                    if (self::cidrMatch($ip, $blacklistedIp)) {
+                        throw new InvalidIpException("Provided host '$host' resolves to '" . implode(', ', $ips) 
+                                                   . "', which matches a blacklisted value: " . $blacklistedIp);
+                    }
+                }
+            }
+        }
+
+        return $host;
+    }
+
+    /**
+     * Re-build a URL based on an array of parts
+     *
+     * @param $parts array
+     *
+     * @return string
+     */
+    public static function buildUrl($parts) {
+        $url  = '';
+
+        $url .= (!empty($parts['scheme'])) 
+              ? $parts['scheme'] . '://' 
+              : '';
+
+        $url .= (!empty($parts['user'])) 
+              ? $parts['user'] 
+              : '';
+
+        $url .= (!empty($parts['pass'])) 
+              ? ':' . $parts['pass'] 
+              : '';
+
+        //If we have a user or pass, make sure to add an "@"
+        $url .= (!empty($parts['user']) || !empty($parts['pass'])) 
+              ? '@' 
+              : '';
+
+        $url .= (!empty($parts['host'])) 
+              ? $parts['host'] 
+              : '';
+
+        $url .= (!empty($parts['port']))
+              ? ':' . $parts['port']
+              : '';
+
+        $url .= (!empty($parts['path'])) 
+              ? $parts['path'] 
+              : '';
+
+        $url .= (!empty($parts['query']))
+              ? '?' . $parts['query']
+              : '';
+
+        $url .= (!empty($parts['fragment']))
+              ? '#' . $parts['fragment']
+              : '';
+
+        return $url;
+    }
+
+    /**
+     * Checks a passed in IP against a CIDR.
+     * See http://stackoverflow.com/questions/594112/matching-an-ip-to-a-cidr-mask-in-php5
+     *
+     * @param $ip   string
+     * @param $cidr string
+     *
+     * @return bool
+     */
+    public static function cidrMatch($ip, $cidr) {
+        if (strpos($cidr, '/') === false) {
+            //It doesn't have a prefix, just a straight IP match
+            return $ip == $cidr;
+        }
+
+        list($subnet, $mask) = explode('/', $cidr);
+        if ((ip2long($ip) & ~((1 << (32 - $mask)) - 1) ) == ip2long($subnet)) {
+            return true;
+        }
+
+        return false;
+    }
+}

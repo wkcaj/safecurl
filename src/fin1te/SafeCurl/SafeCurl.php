@@ -36,6 +36,7 @@ class SafeCurl {
             $options = new Options();
         }
         $this->setOptions($options);
+        $this->init();
     }
 
     /**
@@ -57,6 +58,7 @@ class SafeCurl {
             //Need a valid cURL resource, throw exception
             throw new Exception("SafeCurl expects a valid cURL resource - '" . gettype($curlHandle) . "' provided.");
         }
+         $this->curlHandle = $curlHandle;
     }
 
     /**

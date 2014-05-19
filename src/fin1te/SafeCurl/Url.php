@@ -1,11 +1,11 @@
 <?php
 namespace fin1te\SafeCurl;
 
-use fin1te\SafeCurl\Exception\InvalidUrlException;
-use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidDomainException;
-use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidIPException;
-use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidPortException;
-use fin1te\SafeCurl\Exception\InvalidUrlException\InvalidSchemeException;
+use fin1te\SafeCurl\Exception\InvalidURLException;
+use fin1te\SafeCurl\Exception\InvalidURLException\InvalidDomainException;
+use fin1te\SafeCurl\Exception\InvalidURLException\InvalidIPException;
+use fin1te\SafeCurl\Exception\InvalidURLException\InvalidPortException;
+use fin1te\SafeCurl\Exception\InvalidURLException\InvalidSchemeException;
 
 class Url {
     /**
@@ -42,7 +42,7 @@ class Url {
 
         //Validate the port
         if (array_key_exists('port', $parts)) {
-            $parts['port'] = self::validatePort($parts['port'], $scheme, $options);
+            $parts['port'] = self::validatePort($parts['port'], $options);
         }
 
         //Validate the host

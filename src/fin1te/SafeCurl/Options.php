@@ -123,7 +123,6 @@ class Options {
 
         //For domains, a regex match is needed
         if ($type == 'domain') {
-            var_dump($this->{$list}[$type]);
             foreach ($this->{$list}[$type] as $domain) {
                 if (preg_match('/^' . $domain . '$/', $value)) {
                     return true;

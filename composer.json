@@ -2,6 +2,7 @@
     "name": "fin1te/safecurl",
     "description": "A drop-in replacement for 'curl_exec', designed to prevent SSRF attacks.",
     "keywords": ["curl", "safecurl", "safe", "ssrf", "websec"],
+    "license": "MIT",
     "authors": [
         {
             "name": "Jack W",

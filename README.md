@@ -16,7 +16,7 @@ SafeCurl can be included in any PHP project using [Composer](https://getcomposer
 
 ```
     "require": {
-        "safecurl": ">=1"
+        "fin1te\safecurl": "~1"
     }
 ```
 

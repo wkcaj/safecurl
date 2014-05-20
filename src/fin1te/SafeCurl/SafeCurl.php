@@ -148,7 +148,7 @@ class SafeCurl {
 
             //Check for any errors
             if (curl_errno($curlHandle)) {
-                throw new Execption("cURL Error: " . curl_error($curlHandle));
+                throw new Exception("cURL Error: " . curl_error($curlHandle));
             }
 
             //Check for an HTTP redirect

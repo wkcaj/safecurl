@@ -89,6 +89,7 @@ try {
     $url = 'http://www.google.com';
     
     $validatedUrl = Url::validateUrl($url);
+    $fullUrl = $validatedUrl['url'];
 } catch (Exception $e) {
     // URL wasn't safe
 }

@@ -20,6 +20,11 @@ class Options {
     private $sendCredentials = false;
 
     /**
+     * @var bool Pin DNS records
+     */
+    private $pinDns = false;
+
+    /**
      * @var array
      */
     private $whitelist = array('ip'     => array(),
@@ -141,6 +146,37 @@ class Options {
      */
     public function disableSendCredentials() {
         $this->sendCredentials = false;
+
+        return $this;
+    }
+
+    /**
+     * Get pin DNS option
+     *
+     * @return bool
+     */
+    public function getPinDns() {
+        return $this->pinDns;
+    }
+
+    /**
+     * Enable DNS pinning
+     *
+     * @return fin1te\SafeCurl\Options
+     */
+    public function enablePinDns() {
+        $this->pinDns = true;
+
+        return $this;
+    }
+
+    /**
+     * Disable DNS pinning
+     *
+     * @return fin1te\SafeCurl\Options
+     */
+    public function disablePinDns() {
+        $this->pinDns = false;
 
         return $this;
     }

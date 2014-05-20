@@ -131,8 +131,17 @@ class SafeCurl {
             //Validate the URL
             $url = Url::validateUrl($url, $safeCurl->getOptions());
 
-            //We can assume that the URL *should* be safe to request
-            curl_setopt($curlHandle, CURLOPT_URL, $url);
+            if ($safeCurl->getOptions()->getPinDns()) {
+                //Send a Host header
+                curl_setopt($curlHandle, CURLOPT_HTTPHEADER, array('Host: ' . $url['host']));
+                //The "fake" URL
+                curl_setopt($curlHandle, CURLOPT_URL, $url['url']);
+                //We also have to disable SSL cert verfication, which is not great
+                //Might be possible to manually check the certificate ourselves?
+                curl_setopt($curlHandle, CURLOPT_SSL_VERIFYPEER, false);
+            } else {
+                curl_setopt($curlHandle, CURLOPT_URL, $url['url']);
+            }
 
             //Execute the cURL request
             $response = curl_exec($curlHandle);

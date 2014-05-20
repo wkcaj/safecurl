@@ -36,13 +36,13 @@ use fin1te\SafeCurl\Exception;
 
 try {
     $url = 'http://www.google.com';
-            
+
     $curlHandle = curl_init();
     //Your usual cURL options
     curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (SafeCurl)');
-                            
+
     //Execute using SafeCurl
-    $response = SafeCurl::execute($curlHandle, $url);
+    $response = SafeCurl::execute($url, $curlHandle);
 } catch (Exception $e) {
     //URL wasn't safe
 }
@@ -63,10 +63,10 @@ $options->addToList('blacklist', 'domain', '(.*)\.fin1te\.net');
 $options->addToList('whitelist', 'scheme', 'ftp');
 
 //This will now throw an InvalidDomainException
-$response = SafeCurl::execute($curlHandle, 'http://safecurl.fin1te.net', $options);
+$response = SafeCurl::execute('http://safecurl.fin1te.net', $curlHandle, $options);
 
 //Whilst this will be allowed, and return the response
-$response = SafeCurl::execute($curlHandle, 'ftp://fin1te.net', $option);
+$response = SafeCurl::execute('ftp://fin1te.net', $curlHandle, $options);
 ```
 
 Since we can't get access to any already set cURL options (see Caveats section), to enable `CURL_FOLLOWREDIRECTS` you must call the `enableFollowRedirects()` method. If you wish to specify a redirect limit, you will need to call `setMaxRedirects()`. Passing in `0` will allow infinite redirects.
@@ -87,7 +87,7 @@ use fin1te\SafeCurl\Url;
 
 try {
     $url = 'http://www.google.com';
-    
+
     $validatedUrl = Url::validateUrl($url);
     $fullUrl = $validatedUrl['url'];
 } catch (Exception $e) {
@@ -95,8 +95,30 @@ try {
 }
 ```
 
+
+#### Optional Protections
+
+In addition to the standard checks, two more are available.
+
+The first is to prevent [DNS Rebinding](https://en.wikipedia.org/wiki/DNS_rebinding) attacks. This can be enabled by calling the `enablePinDns` method on an `Options` object. There is one major issue with this - the SSL certificate **can't** be validated. This is due to the real hostname being sent in the `Host` header, and the URL using the IP address.
+
+```php
+$options = new Options();
+$options->enablePinDns();
+```
+
+The second disables the use of credentials in a URL, since PHP's `parse_url` returns values which differ from ones cURL uses. This is a temporary fix.
+
+```php
+$options = new Options();
+$options->disableSendCredentials();
+
+//This will throw an InvalidURLException
+$response = SafeCurl::execute('http://user:pass@google.com', $curlHandle, $options);
+```
+
 #### Cavets
-Since SafeCurl uses `getaddrbyhostl` to resolve domain names, which isn't IPv6 compatible, the class will only work with IPv4 at the moment. If a solution arises to quickly resolve to IPv6, then this will be implemented.
+Since SafeCurl uses `getaddrbyhostl` to resolve domain names, which isn't IPv6 compatible, the class will only work with IPv4 at the moment. See [Issue #1](https://github.com/fin1te/safecurl/issues/1).
 
 As mentioned above, we can't fetch the value of any cURL options set against the provided cURL handle. Because SafeCurl handles redirects itself, it will turn off `CURLOPT_FOLLOWLOCATION` and use the value from the `Options` object. This is also true of `CURLOPT_MAXREDIRECTS`.
 

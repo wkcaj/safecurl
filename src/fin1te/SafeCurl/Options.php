@@ -15,6 +15,11 @@ class Options {
     private $followLocationLimit = 0;
 
     /**
+     * @var bool Allow credentials in a URL
+     */
+    private $sendCredentials = false;
+
+    /**
      * @var array
      */
     private $whitelist = array('ip'     => array(),
@@ -104,6 +109,38 @@ class Options {
         }
 
         $this->followLocationLimit = $limit;
+
+        return $this;
+    }
+
+    /**
+     * Get send credentials option
+     *
+     * @return bool
+     */
+    public function getSendCredentials() {
+        return $this->sendCredentials;
+    }
+
+    /**
+     * Enable sending of credenitals
+     * This is potentially a security risk
+     *
+     * @return fin1te\SafeCurl\Options
+     */
+    public function enableSendCredentials() {
+        $this->sendCredentials = true;
+
+        return $this;
+    }
+
+    /**
+     * Disable sending of credentials
+     *
+     * @return fin1te\SafeCurl\Options
+     */
+    public function disableSendCredentials() {
+        $this->sendCredentials = false;
 
         return $this;
     }

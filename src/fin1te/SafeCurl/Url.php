@@ -18,18 +18,23 @@ class Url {
      */
     public static function validateUrl($url, Options $options) {
         if (trim($url) == '') {
-            throw new InvalidUrlException("Provided URL '$url' cannot be empty");
+            throw new InvalidURLException("Provided URL '$url' cannot be empty");
         }
 
         //Split URL into parts first
         $parts = parse_url($url);
 
         if (empty($parts)) {
-            throw new InvalidUrlException("Error parsing URL '$url'");
+            throw new InvalidURLException("Error parsing URL '$url'");
         }
 
         if (!array_key_exists('host', $parts)) {
-            throw new InvalidUrlException("Provided URL '$url' doesn't contain a hostname");
+            throw new InvalidURLException("Provided URL '$url' doesn't contain a hostname");
+        }
+
+        //If credentials are passed in, but we don't want them, raise an exception
+        if (!$options->getSendCredentials() && (array_key_exists('user', $parts) || array_key_exists('pass', $parts))) {
+            throw new InvalidURLException("Credentials passed in but 'sendCredentials' is set to false");
         }
 
         //First, validate the scheme 

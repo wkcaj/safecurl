@@ -32,11 +32,6 @@ class Url {
             throw new InvalidURLException("Provided URL '$url' doesn't contain a hostname");
         }
 
-        //If credentials are passed in, but we don't want them, raise an exception
-        if (!$options->getSendCredentials() && (array_key_exists('user', $parts) || array_key_exists('pass', $parts))) {
-            throw new InvalidURLException("Credentials passed in but 'sendCredentials' is set to false");
-        }
-
         //First, validate the scheme 
         if (array_key_exists('scheme', $parts)) {
             $parts['scheme'] = self::validateScheme($parts['scheme'], $options);
@@ -50,21 +45,21 @@ class Url {
             $parts['port'] = self::validatePort($parts['port'], $options);
         }
 
+        //Reolve host to ip(s)
+        $parts['ips'] = self::resolveHostname($parts['host']);
+
         //Validate the host
-        $host = self::validateHost($parts['host'], $options);
+        $parts['host'] = self::validateHostname($parts['host'], $parts['ips'], $options);
         if ($options->getPinDns()) {
             //Since we're pinning DNS, we replace the host in the URL
             //with an IP, then get cURL to send the Host header
-            $parts['host'] = $host['ips'][0]; 
-        } else {
-            //Not pinning DNS, so just use the host
-            $parts['host'] = $host['host'];
+            $parts['host'] = $parts['ips'][0]; 
         }
 
         //Rebuild the URL
-        $url = self::buildUrl($parts);
+        $cleanUrl = self::buildUrl($parts);
 
-        return array('url' => $url, 'host' => $host['host'], 'ips' => $host['ips']);
+        return array('originalUrl' => $url, 'cleanUrl' => $cleanUrl, 'parts' => $parts);
     }
 
     /**
@@ -113,28 +108,22 @@ class Url {
     }
 
     /**
-     * Validates a URL host
+     * Validates a URL hostname
      *
-     * @param $host    string
-     * @param $options fin1te\SafeCurl\Options
+     * @param $hostname string
+     * @param $options  fin1te\SafeCurl\Options
      *
      * @returns string
      */
-    public static function validateHost($host, Options $options) {
+    public static function validateHostname($hostname, $ips, Options $options) {
         //Check the host against the domain lists
-        if (!$options->isInList('whitelist', 'domain', $host)) {
-            throw new InvalidDomainException("Provided host '$host' doesn't match whitelisted values: "
+        if (!$options->isInList('whitelist', 'domain', $hostname)) {
+            throw new InvalidDomainException("Provided hostname '$hostname' doesn't match whitelisted values: "
                                            . implode(', ', $options->getList('whitelist', 'domain')));
         }
 
-        if ($options->isInList('blacklist', 'domain', $host)) {
-            throw new InvalidDomainException("Provided host '$host' matches a blacklisted value");
-        }
-
-        //Now resolve to an IP and check against the IP lists
-        $ips = @gethostbynamel($host);
-        if (empty($ips)) {
-             throw new InvalidDomainException("Provided host '$host' doesn't resolve to an IP address");
+        if ($options->isInList('blacklist', 'domain', $hostname)) {
+            throw new InvalidDomainException("Provided hostname '$hostname' matches a blacklisted value");
         }
 
         $whitelistedIps = $options->getList('whitelist', 'ip');
@@ -152,7 +141,7 @@ class Url {
             }
 
             if (!$valid) {
-                throw new InvalidIpException("Provided host '$host' resolves to '" . implode(', ', $ips) 
+                throw new InvalidIpException("Provided hostname '$hostname' resolves to '" . implode(', ', $ips) 
                                            . "', which doesn't match whitelisted values: "
                                            . implode(', ', $whitelistedIps));
             }
@@ -164,14 +153,14 @@ class Url {
             foreach ($blacklistedIps as $blacklistedIp) {
                 foreach ($ips as $ip) {
                     if (self::cidrMatch($ip, $blacklistedIp)) {
-                        throw new InvalidIpException("Provided host '$host' resolves to '" . implode(', ', $ips) 
+                        throw new InvalidIpException("Provided hostname '$hostname' resolves to '" . implode(', ', $ips) 
                                                    . "', which matches a blacklisted value: " . $blacklistedIp);
                     }
                 }
             }
         }
 
-        return array('host' => $host, 'ips' => $ips);
+        return $hostname;
     }
 
     /**
@@ -189,11 +178,11 @@ class Url {
               : '';
 
         $url .= (!empty($parts['user'])) 
-              ? $parts['user'] 
+              ? rawurlencode($parts['user']) 
               : '';
 
         $url .= (!empty($parts['pass'])) 
-              ? ':' . $parts['pass'] 
+              ? ':' . rawurlencode($parts['pass'])
               : '';
 
         //If we have a user or pass, make sure to add an "@"
@@ -206,22 +195,48 @@ class Url {
               : '';
 
         $url .= (!empty($parts['port']))
-              ? ':' . $parts['port']
+              ? ':' . (int) $parts['port']
               : '';
 
         $url .= (!empty($parts['path'])) 
-              ? $parts['path'] 
+              ? '/' . rawurlencode(substr($parts['path'], 1))
               : '';
 
-        $url .= (!empty($parts['query']))
-              ? '?' . $parts['query']
-              : '';
+        //The query string is difficult to encode properly
+        //We need to ensure no special characters can be 
+        //used to mangle the URL, but URL encoding all of it
+        //prevents the query string from being parsed properly
+        if (!empty($parts['query'])) {
+            $query = rawurlencode($parts['query']);
+            //Replace encoded &, =, ;, [ and ] to originals
+            $query = str_replace(array('%26', '%3D', '%3B', '%5B', '%5D'),
+                                 array('&',   '=',   ';',   '[',   ']'),
+                                 $query);
+
+            $url .= '?' . $query;
+        }
 
         $url .= (!empty($parts['fragment']))
-              ? '#' . $parts['fragment']
+              ? '#' . rawurlencode($parts['fragment'])
               : '';
 
         return $url;
+    }
+
+    /**
+     * Resolves a hostname to its IP(s)
+     *
+     * @param $hostname string
+     *
+     * @return array
+     */
+    public static function resolveHostname($hostname) {
+        $ips = @gethostbynamel($hostname);
+        if (empty($ips)) {
+            throw new InvalidDomainException("Provided hostname '$hostname' doesn't resolve to an IP address");
+        }
+
+        return $ips;
     }
 
     /**

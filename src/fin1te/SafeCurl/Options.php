@@ -129,7 +129,6 @@ class Options {
 
     /**
      * Enable sending of credenitals
-     * This is potentially a security risk
      *
      * @return fin1te\SafeCurl\Options
      */

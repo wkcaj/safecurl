@@ -131,16 +131,22 @@ class SafeCurl {
             //Validate the URL
             $url = Url::validateUrl($url, $safeCurl->getOptions());
 
+            //Are there credentials, but we don't want to send them?
+            if (!$safeCurl->getOptions()->getSendCredentials() &&
+                (array_key_exists('user', $url) || array_key_exists('pass', $url))) {
+                throw new InvalidURLException("Credentials passed in but 'sendCredentials' is set to false");
+            }
+
             if ($safeCurl->getOptions()->getPinDns()) {
                 //Send a Host header
-                curl_setopt($curlHandle, CURLOPT_HTTPHEADER, array('Host: ' . $url['host']));
+                curl_setopt($curlHandle, CURLOPT_HTTPHEADER, array('Host: ' . $url['parts']['host']));
                 //The "fake" URL
-                curl_setopt($curlHandle, CURLOPT_URL, $url['url']);
+                curl_setopt($curlHandle, CURLOPT_URL, $url['cleanUrl']);
                 //We also have to disable SSL cert verfication, which is not great
                 //Might be possible to manually check the certificate ourselves?
                 curl_setopt($curlHandle, CURLOPT_SSL_VERIFYPEER, false);
             } else {
-                curl_setopt($curlHandle, CURLOPT_URL, $url['url']);
+                curl_setopt($curlHandle, CURLOPT_URL, $url['cleanUrl']);
             }
 
             //Execute the cURL request

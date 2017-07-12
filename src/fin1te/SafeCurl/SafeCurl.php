@@ -64,7 +64,7 @@ class SafeCurl {
     /**
      * Gets Options
      *
-     * @return SafeCurl\Options
+     * @return Options
      */
     public function getOptions() {
         return $this->options;
@@ -73,7 +73,7 @@ class SafeCurl {
     /**
      * Sets Options
      *
-     * @param $options SafeCurl\Options
+     * @param $options Options
      */
     public function setOptions(Options $options) {
         $this->options = $options;
@@ -97,27 +97,18 @@ class SafeCurl {
     }
 
     /**
-     * Exectutes a cURL request, whilst checking that the 
+     * Exectutes a cURL request, whilst checking that the
      * URL abides by our whitelists/blacklists
      *
      * @param $url        string
      * @param $curlHandle resource         optional - Incase called on an object rather than statically
-     * @param $options    SafeCurl\Options optional
-     *
+     * @param $options    Options optional
      * @return bool
+     * @throws InvalidURLException
+     * @throws \fin1te\SafeCurl\Exception
      */
     public static function execute($url, $curlHandle = null, Options $options = null) {
-        //Check if we've been called staticly or not
-        if (isset($this) && get_class($this) == __CLASS__) {
-            $safeCurl = $this;
-            //Get the cURL handle, if it wasn't passed in
-             if (!is_resource($curlHandle) || get_resource_type($curlHandle) != 'curl') {
-                $curlHandle = $this->getCurlHandle();
-             }
-        } else {
-            $safeCurl = new SafeCurl($curlHandle, $options);
-        }
-
+        $safeCurl = new SafeCurl($curlHandle, $options);
 
         //Backup the existing URL
         $originalUrl = $url;

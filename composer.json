@@ -1,5 +1,5 @@
 {
-    "name": "fin1te/safecurl",
+    "name": "b2bcenter/safecurl",
     "description": "A drop-in replacement for 'curl_exec', designed to prevent SSRF attacks.",
     "keywords": ["curl", "safecurl", "safe", "ssrf", "websec"],
     "license": "MIT",
@@ -9,12 +9,8 @@
             "email": "jack@fin1te.net"
         }
     ],
-    "require": {
-        "php": ">=5.3.0"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "3.7.*"
-    },
+   "minimum-stability": "dev",
+   "version": "1.1.3",
     "autoload": {
         "psr-0": {
             "fin1te\\SafeCurl": "src/"

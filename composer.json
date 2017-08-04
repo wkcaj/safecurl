@@ -1,5 +1,5 @@
 {
-    "name": "fin1te/safecurl",
+    "name": "b2bcenter/safecurl",
     "description": "A drop-in replacement for 'curl_exec', designed to prevent SSRF attacks.",
     "keywords": ["curl", "safecurl", "safe", "ssrf", "websec"],
     "license": "MIT",

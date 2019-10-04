@@ -133,7 +133,7 @@ class SafeCurl {
 
             //Are there credentials, but we don't want to send them?
             if (!$safeCurl->getOptions()->getSendCredentials() &&
-                (array_key_exists('user', $url) || array_key_exists('pass', $url))) {
+                (array_key_exists('user', $url['parts']) || array_key_exists('pass', $url['parts']))) {
                 throw new InvalidURLException("Credentials passed in but 'sendCredentials' is set to false");
             }
 

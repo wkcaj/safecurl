@@ -207,10 +207,10 @@ class Options {
             return false;
         }
 
-        //For domains, a regex match is needed
+        //For domains, a case insensitive match is needed
         if ($type == 'domain') {
             foreach ($this->{$list}[$type] as $domain) {
-                if (preg_match('/^' . $domain . '$/i', $value)) {
+                if (!strcasecmp($domain, $value)) {
                     return true;
                 }
             }

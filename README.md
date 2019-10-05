@@ -1,3 +1,10 @@
+# Deprecation Notice
+
+This repository is deprecated. For up-to-date repositories see:
+
+* https://github.com/j0k3r/safecurl
+* https://packagist.org/?query=safecurl
+
 # SafeCurl
 
 SafeCurl intends to be a drop-in replacement for the [curl_exec](http://php.net/manual/en/function.curl-exec.php) function in PHP. SafeCurl validates each part of the URL against a white or black list, to help protect against Server-Side Request Forgery attacks.

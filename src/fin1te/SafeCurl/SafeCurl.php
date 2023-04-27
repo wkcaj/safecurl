@@ -1,6 +1,7 @@
 <?php
 namespace fin1te\SafeCurl;
 
+use CurlHandle;
 use fin1te\SafeCurl\Exception;
 use fin1te\SafeCurl\Exception\InvalidURLException;
 use fin1te\SafeCurl\Exception\InvalidURLException\InvalidDomainException;
@@ -12,7 +13,7 @@ class SafeCurl {
     /**
      * cURL Handle
      *
-     * @var resource
+     * @var resource|CurlHandle
      */
     private $curlHandle;
 
@@ -54,7 +55,7 @@ class SafeCurl {
      * @param $curlHandle resource
      */
     public function setCurlHandle($curlHandle) {
-         if (!is_resource($curlHandle) || get_resource_type($curlHandle) != 'curl') {
+         if (!(is_resource($curlHandle) && get_resource_type($curlHandle) !== 'curl') && !($curlHandle instanceof CurlHandle)) {
             //Need a valid cURL resource, throw exception
             throw new Exception("SafeCurl expects a valid cURL resource - '" . gettype($curlHandle) . "' provided.");
         }

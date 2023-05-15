@@ -55,7 +55,7 @@ class SafeCurl {
      * @param $curlHandle resource
      */
     public function setCurlHandle($curlHandle) {
-         if (!(is_resource($curlHandle) && get_resource_type($curlHandle) !== 'curl') && !($curlHandle instanceof CurlHandle)) {
+        if (!((is_resource($curlHandle) && get_resource_type($curlHandle) === 'curl') || (class_exists('CurlHandle') && $curlHandle instanceof CurlHandle))) {
             //Need a valid cURL resource, throw exception
             throw new Exception("SafeCurl expects a valid cURL resource - '" . gettype($curlHandle) . "' provided.");
         }

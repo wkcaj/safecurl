@@ -199,7 +199,7 @@ class Url {
               : '';
 
         $url .= (!empty($parts['path'])) 
-              ? '/' . rawurlencode(substr($parts['path'], 1))
+              ? str_replace('%2F', '/', rawurlencode($parts['path']))
               : '';
 
         //The query string is difficult to encode properly
